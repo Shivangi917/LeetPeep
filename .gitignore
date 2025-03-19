@@ -1,0 +1,72 @@
+# Root .gitignore (covers both frontend and backend)
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Editor & IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependencies (handled in subfolders)
+node_modules/
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Docker
+docker-compose.override.yml
+*.dockerfile
+
+# Misc
+*.bak
+*.tmp
+*.orig
+
+# Backend-specific (inside /backend folder)
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.cache/
+
+# Frontend-specific (inside /frontend folder)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.cache/
+frontend/.next/  # If using Next.js
+frontend/.nuxt/   # If using Nuxt.js
+frontend/.vite/   # If using Vite
+frontend/coverage/ # If using Jest or Cypress
+
+# MongoDB data (if using local DB)
+backend/data/db/
+backend/dump/
+backend/mongodb/
+
+# Cypress and testing (optional)
+frontend/cypress/
+frontend/cypress/videos/
+frontend/cypress/screenshots/
+
