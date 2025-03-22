@@ -1,6 +1,10 @@
 import { User } from '../models/user.model.js'
 import bcryptjs from 'bcryptjs';
 import { generateVerificationCode } from '../utils/generateVerificationCode.utils.js';
+import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.utils.js";
+import {
+	sendVerificationEmail,
+} from "../mailtrap/emails.js";
 
 export const signup = async (req, res) => {
     // get the user information from request body
@@ -35,6 +39,8 @@ export const signup = async (req, res) => {
 
         generateTokenAndSetCookie(res, user._id);
 
+        await sendVerificationEmail(user.email, verificationToken);
+
         res.status(201).json({
             success: true,
             message: "User created successfully",
@@ -48,6 +54,28 @@ export const signup = async (req, res) => {
     }
     
     
+}
+
+export const verifyEmail = async (req, res) => {
+    const { code } = req.body;
+    try {
+        const user = await User.findOne({
+            verificationToken: code,
+            verificationTokenExpiresAt: { $gt: Date.now() }
+        })
+
+        if(!user) {
+            return res.status(400).json({ success: false, message: "Invalid or expired verification code"});
+        }
+
+        user.isVerified = true;
+        user.verificationToken = undefined;
+        user.verificationTokenExpiresAt = undefined;
+
+        await user.save();
+    } catch (error) {
+
+    }
 }
 
 export const login = async (req, res) => {
