@@ -1,6 +1,7 @@
 import { User } from '../models/user.model.js'
 import bcryptjs from 'bcryptjs';
 import crypto from "crypto";
+import jwt from 'jsonwebtoken';
 
 import { generateVerificationCode } from '../utils/generateVerificationCode.utils.js';
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.utils.js";
@@ -95,29 +96,25 @@ export const verifyEmail = async (req, res) => {
 }
 
 export const login = async (req, res) => {
-    const { email, password } = req.body;
     try {
+        const { email, password } = req.body;
+
+        // Find user
         const user = await User.findOne({ email });
-        if(!user) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
+        if (!user) return res.status(401).json({ message: "User not found" });
 
-        generateTokenAndSetCookie(res, user._id);
+        // Check password
+        const isMatch = await bcryptjs.compare(password, user.password);
+        if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
-        user.lastLogin = new Date();
-
-        res.status(201).json({
-            success: true,
-            message: "Logged in successfully",
-            user: {
-                ...user._doc,
-                password: undefined
-            }
-        })
+        // Generate JWT token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        res.json({ token, userId: user._id });
     } catch (error) {
-
+        res.status(400).json({ success: false, message: error.message });
     }
-}
+};
+
 
 export const logout = async (req, res) => {
     res.clearCookie("token")
@@ -171,7 +168,9 @@ export const resetPassword = async (req, res) => {
 		user.resetPasswordExpiresAt = undefined;
 		await user.save();
 
-		await sendResetSuccessEmail(user.email);
+		await sendPasswordResetEmail(user.email, `${process.env.CLIENT_URL}/reset-password/${token}`);
+
+
 
 		res.status(200).json({ success: true, message: "Password reset successful" });
 	} catch (error) {
@@ -180,16 +179,16 @@ export const resetPassword = async (req, res) => {
 	}
 };
 
-export const checkAuth = async (req, res) => {
-	try {
-		const user = await User.findById(req.userId).select("-password");
-		if (!user) {
-			return res.status(400).json({ success: false, message: "User not found" });
-		}
+export const checkAuth = (req, res) => {
+    try {
+        console.log("User in checkAuth:", req.user); // Debugging
 
-		res.status(200).json({ success: true, user });
-	} catch (error) {
-		console.log("Error in checkAuth ", error);
-		res.status(400).json({ success: false, message: error.message });
-	}
+        if (!req.user || !req.user.userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized - No user data found" });
+        }
+
+        res.status(200).json({ success: true, userId: req.user.userId });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
 };
